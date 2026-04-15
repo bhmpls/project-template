@@ -72,7 +72,7 @@ foreach ($f in $folders) { $folderByName[$f.name] = $f.id }
 
 $localCache = @{}
 if (Test-Path $localPath) {
-    foreach ($line in Get-Content $localPath) {
+    foreach ($line in (Get-Content $localPath -Encoding UTF8)) {
         if ($line -match '^\s*([^#=\s][^=]*)=(.*)$') {
             $localCache[$matches[1].Trim()] = $matches[2]
         }
@@ -94,7 +94,7 @@ $outputLines = @()
 $populated = @()
 $newLocals = @{}
 
-foreach ($line in Get-Content $templatePath) {
+foreach ($line in (Get-Content $templatePath -Encoding UTF8)) {
     # Preserve blank lines and comments
     if ($line -match '^\s*$' -or $line -match '^\s*#') {
         $outputLines += $line
@@ -151,7 +151,8 @@ foreach ($line in Get-Content $templatePath) {
 
 # --- Write .env and update .env.local ---------------------------------------
 
-Set-Content -Path $envPath -Value $outputLines -Encoding UTF8
+$utf8NoBom = New-Object System.Text.UTF8Encoding $false
+[System.IO.File]::WriteAllLines($envPath, [string[]]$outputLines, $utf8NoBom)
 
 if ($newLocals.Count -gt 0) {
     $localLines = @()
@@ -159,7 +160,7 @@ if ($newLocals.Count -gt 0) {
     foreach ($k in $newLocals.Keys) {
         $localLines += "$k=$($newLocals[$k])"
     }
-    Set-Content -Path $localPath -Value $localLines -Encoding UTF8
+    [System.IO.File]::WriteAllLines($localPath, [string[]]$localLines, $utf8NoBom)
 }
 
 # --- Summary ----------------------------------------------------------------
